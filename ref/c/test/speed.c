@@ -14,7 +14,8 @@
 
 #ifdef SOFIA_EXPOSE_STATICS
 void GF4_scalarmul_vector(uint64_t *r, const uint64_t *a, unsigned char alpha);
-void hash_transcript(unsigned char *hash, const unsigned char *transcript);
+void hash_transcript(unsigned char *hash, const unsigned char *transcript,
+                     const unsigned char *m, unsigned long long mlen);
 #ifdef SOFIA_MEASURE_4X_PERM_COMMIT
 void commit4x(unsigned char *out0, unsigned char *out1, unsigned char *out2, unsigned char *out3,
               const uint64_t *in0, const uint64_t *in1, const uint64_t *in2, const uint64_t *in3, int len);
@@ -236,7 +237,7 @@ int main()
 #ifdef SOFIA_EXPOSE_STATICS
     for(i=0; i<NTESTS; i++) {
         t[i] = cpucycles();
-        hash_transcript(buf, transcript);
+        hash_transcript(buf, transcript, m, mlen);
     }
     print_results("hash transcript: ", t, NTESTS, 1);
     signing_total += median(t, NTESTS);
