@@ -30,14 +30,13 @@
 
 // Transcript that is used to generate challenges contains;
 //  - Public key pk; SOFIA_PUBLICKEYBYTES
-//  - Message digest D; SOFIA_HASHBYTES
 //  - The commits; 2*SOFIA_HASHBYTES*SOFIA_ROUNDS
 //  - Length-preserving commits over responses: SOFIA_ROUNDS times
 //     - G(resp1): SOFIA_T * (SOFIA_NBYTES + SOFIA_MBYTES
 //     - G(resp2): 2 * SOFIA_NBYTES
+// It does not explicitly contain the message; that is appended when hashing
 #define SOFIA_TRANSCRIPTBYTES (\
     SOFIA_PUBLICKEYBYTES +\
-    SOFIA_HASHBYTES +\
     SOFIA_ROUNDS * (2 * SOFIA_HASHBYTES+\
                     SOFIA_T * (SOFIA_NBYTES + SOFIA_MBYTES) +\
                     2 * SOFIA_NBYTES))

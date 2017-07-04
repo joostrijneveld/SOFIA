@@ -40,14 +40,22 @@ SOFIA_STATIC void GF4_scalarmul_vector(uint64_t *r, const uint64_t *a, unsigned 
     }
 }
 
-SOFIA_STATIC void hash_transcript(unsigned char *hash, const unsigned char *transcript)
+SOFIA_STATIC void hash_transcript(unsigned char *hash, const unsigned char *transcript,
+                                  const unsigned char *m, unsigned long long mlen)
 {
-    shake128(hash, SOFIA_HASHBYTES, transcript, SOFIA_TRANSCRIPTBYTES);
-}
+    uint64_t transcript_shakestate[25];
+    unsigned long long absorbed_bytes;
+    int i;
 
-SOFIA_STATIC void digest(unsigned char *D, const unsigned char *m, unsigned long long mlen)
-{
-    shake128(D, SOFIA_HASHBYTES, m, mlen);
+    for(i = 0; i < 25; i++) {
+        transcript_shakestate[i] = 0;
+    }
+    absorbed_bytes = 0;
+    shake128_partial_absorb(transcript_shakestate, transcript, SOFIA_TRANSCRIPTBYTES, &absorbed_bytes);
+    shake128_partial_absorb(transcript_shakestate, m, mlen, &absorbed_bytes);
+    shake128_close_absorb(transcript_shakestate, &absorbed_bytes);
+
+    shake128_squeezebytes(hash, SOFIA_HASHBYTES, transcript_shakestate);
 }
 
 SOFIA_STATIC void commit(unsigned char *out, const uint64_t *in, int inlen)
@@ -109,8 +117,7 @@ int crypto_sign(unsigned char *sm, unsigned long long *smlen,
     // Transcript is put into one buffer for convenient hashing.
     unsigned char transcript[SOFIA_TRANSCRIPTBYTES] __attribute__ ((aligned (32)));
     unsigned char *pk = transcript;
-    unsigned char *D = pk + SOFIA_PUBLICKEYBYTES;
-    unsigned char *commits = D + SOFIA_HASHBYTES;
+    unsigned char *commits = pk + SOFIA_PUBLICKEYBYTES;
     unsigned char *h1 = commits + SOFIA_HASHBYTES * SOFIA_ROUNDS * 2;
     unsigned char *h2 = h1 + SOFIA_ROUNDS * (SOFIA_T * (SOFIA_NBYTES + SOFIA_MBYTES));
     // Buffer for challenges I and J, rounded up to closest byte.
@@ -137,8 +144,6 @@ int crypto_sign(unsigned char *sm, unsigned long long *smlen,
     int idx;
 
     shake128(skbuf, SOFIA_SKBUFBYTES, sk, SOFIA_SEEDBYTES);
-
-    digest(D, m, mlen);
 
     SOFIA_F_EXPANDING_FUNC(F, skbuf);
 
@@ -219,7 +224,9 @@ int crypto_sign(unsigned char *sm, unsigned long long *smlen,
     //  over all commits does not need to be included separately for the
     //  verifier to be able to check. They can recreate half the commits, and
     //  the other half are included as part of the signature.
-    hash_transcript(sm, transcript);
+    // The randomness included in the transcript is necessary and sufficient
+    //  to guarantee collision resilience.
+    hash_transcript(sm, transcript, m, mlen);
 
     // Derive 'reveal indices' from hash over transcript.
     sample_challenges(indices, SOFIA_ROUNDS, sm, SOFIA_HASHBYTES);
@@ -288,8 +295,7 @@ int crypto_sign_open(unsigned char *m, unsigned long long *mlen,
     const unsigned char *transcript_hash = sm;
     unsigned char transcript[SOFIA_TRANSCRIPTBYTES];
     unsigned char *trans_pk = transcript;
-    unsigned char *D = trans_pk + SOFIA_PUBLICKEYBYTES;
-    unsigned char *commits = D + SOFIA_HASHBYTES;
+    unsigned char *commits = trans_pk + SOFIA_PUBLICKEYBYTES;
     unsigned char *h1 = commits + SOFIA_HASHBYTES * SOFIA_ROUNDS * 2;
     unsigned char *h2 = h1 + SOFIA_ROUNDS * (SOFIA_T * (SOFIA_NBYTES + SOFIA_MBYTES));
     // Buffer for challenges I and J, rounded up to closest byte.
@@ -306,8 +312,6 @@ int crypto_sign_open(unsigned char *m, unsigned long long *mlen,
     int alpha = 0;
     int i, j, k;
     int ch;
-
-    digest(D, sm + SOFIA_BYTES, smlen - SOFIA_BYTES);
 
     SOFIA_F_EXPANDING_FUNC(F, pk);
 
@@ -393,7 +397,7 @@ int crypto_sign_open(unsigned char *m, unsigned long long *mlen,
         commits += 2*SOFIA_HASHBYTES;
     }
 
-    hash_transcript(transcript, transcript);
+    hash_transcript(transcript, transcript, sm, smlen - SOFIA_BYTES);
 
     for (i = 0; i < SOFIA_HASHBYTES; i++) {
         if (transcript[i] != transcript_hash[i]) {
