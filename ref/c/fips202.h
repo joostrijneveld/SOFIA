@@ -14,6 +14,11 @@ void shake128_absorb(uint64_t *s, const unsigned char *input, unsigned long long
 void shake128_squeezeblocks(unsigned char *output, unsigned long long nblocks, uint64_t *s);
 void shake128(unsigned char *output, unsigned long long outputByteLen, const unsigned char *input, unsigned long long inputByteLen);
 
+void shake128_partial_absorb(uint64_t *s,
+                             const unsigned char *m, unsigned long long int mlen,
+                             unsigned long long *absorbed_bytes);
+void shake128_close_absorb(uint64_t *s, unsigned long long *absorbed_bytes);
+
 void cshake128_simple(unsigned char *output, unsigned long long outlen, unsigned char *custom, unsigned long long customlen, const unsigned char *in, unsigned long long inlen);
 void cshake128_256simple(unsigned char *output, const char *custom, const unsigned char *in, unsigned long long inlen);
 

@@ -349,7 +349,7 @@ static void keccak_absorb(uint64_t *s,
     m += r;
   }
 
-  for (i = 0; i < r; ++i)
+  for (i = mlen; i < r; ++i)
     t[i] = 0;
   for (i = 0; i < mlen; ++i)
     t[i] = m[i];
@@ -377,11 +377,61 @@ static void keccak_squeezeblocks(unsigned char *h, unsigned long long int nblock
   }
 }
 
+static void keccak_partial_absorb(uint64_t *s, unsigned int r,
+                                  const unsigned char *m, unsigned long long int mlen,
+                                  unsigned long long *absorbed_bytes)
+{
+  unsigned long long i;
+
+  while (mlen + *absorbed_bytes >= r)
+  {
+    for (i = 0; i < r - *absorbed_bytes; ++i)
+      *((unsigned char *)s + *absorbed_bytes + i) ^= m[i];
+
+    KeccakF1600_StatePermute(s);
+    mlen -= r - *absorbed_bytes;
+    m += r - *absorbed_bytes;
+
+    *absorbed_bytes = 0;
+  }
+
+  for (i = 0; i < mlen; ++i) {
+    *((unsigned char *)s + *absorbed_bytes + i) ^= m[i];
+  }
+
+  *absorbed_bytes += mlen;
+}
+
+static void keccak_close_absorb(uint64_t *s, unsigned int r,
+                                unsigned long long *absorbed_bytes, unsigned char p)
+{
+  unsigned long long i;
+  unsigned char t[200];
+
+  for (i = 0; i < r; ++i)
+    t[i] = 0;
+
+  i = *absorbed_bytes;
+  t[i] = p;
+  t[r - 1] |= 128;
+  for (i = 0; i < r / 8; ++i)
+    s[i] ^= load64(t + 8 * i);
+}
+
+void shake128_partial_absorb(uint64_t *s,
+                             const unsigned char *m, unsigned long long int mlen,
+                             unsigned long long *absorbed_bytes)
+{
+  keccak_partial_absorb(s, SHAKE128_RATE, m, mlen, absorbed_bytes);
+}
+
+void shake128_close_absorb(uint64_t *s, unsigned long long *absorbed_bytes)
+{
+  keccak_close_absorb(s, SHAKE128_RATE, absorbed_bytes, 0x1F);
+}
+
 void shake128_absorb(uint64_t *s, const unsigned char *input, unsigned long long inputByteLen)
 {
-  int i;
-  for(i=0;i<25;i++)
-    s[i] = 0;
   keccak_absorb(s, SHAKE128_RATE, input, inputByteLen, 0x1F);
 }
 

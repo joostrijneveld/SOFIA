@@ -9,6 +9,7 @@ TESTS = test/test_mq \
 		test/test_3way_mq \
 		test/test_sofia \
 		test/test_sample_challenges \
+		test/test_fips202 \
 		test/speed \
 
 all: $(TESTS)

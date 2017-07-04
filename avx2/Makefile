@@ -11,6 +11,7 @@ TESTS = test/test_mq \
 		test/test_mq_consistency \
 		test/test_3way_mq \
 		test/test_F_gap \
+		test/test_fips202 \
 		test/test_fips202x4 \
 		test/test_sofia \
 		test/test_sample_challenges \
