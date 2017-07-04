@@ -74,13 +74,8 @@ SOFIA_STATIC void permute4x(unsigned char *out0, unsigned char *out1, unsigned c
 
 SOFIA_STATIC void sample_rte(uint64_t *out, uint64_t *shakestate)
 {
-#if SOFIA_SEEDBYTES > SHAKE128_RATE
-    #error "We assume that one block of SHAKE128 output is larger than the PRG seed"
-#endif
-    unsigned char d[SHAKE128_RATE];
-
-    shake128_squeezeblocks(d, 1, shakestate);
-    prg((unsigned char *)out, (2*SOFIA_NBYTES + SOFIA_MBYTES) * SOFIA_ROUNDS, d);
+    shake128_squeezebytes((unsigned char *)out, SOFIA_SEEDBYTES, shakestate);
+    prg((unsigned char *)out, (2*SOFIA_NBYTES + SOFIA_MBYTES) * SOFIA_ROUNDS, (unsigned char *)out);
 }
 
 int crypto_sign_keypair(unsigned char *pk, unsigned char *sk)

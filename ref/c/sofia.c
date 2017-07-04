@@ -62,17 +62,7 @@ SOFIA_STATIC void permute(unsigned char *out, const uint64_t *in, int len)
 
 SOFIA_STATIC void sample_rte(uint64_t *out, uint64_t *shakestate)
 {
-    unsigned char d[SHAKE128_RATE];
-    int i;
-
-    shake128_squeezeblocks((unsigned char *)out, (2*SOFIA_NBYTES + SOFIA_MBYTES) * SOFIA_ROUNDS / SHAKE128_RATE, shakestate);
-    out += ((2*SOFIA_NBYTES + SOFIA_MBYTES) * SOFIA_ROUNDS / SHAKE128_RATE) * SHAKE128_RATE / 8;
-    if (((2*SOFIA_NBYTES + SOFIA_MBYTES) * SOFIA_ROUNDS) % SHAKE128_RATE) {
-        shake128_squeezeblocks(d, 1, shakestate);
-        for(i = 0; i < ((2*SOFIA_NBYTES + SOFIA_MBYTES) * SOFIA_ROUNDS) % SHAKE128_RATE; i++) {
-            *((unsigned char *)out + i) = d[i];
-        }
-    }
+    shake128_squeezebytes((unsigned char *)out, (2*SOFIA_NBYTES + SOFIA_MBYTES) * SOFIA_ROUNDS, shakestate);
 }
 
 int crypto_sign_keypair(unsigned char *pk, unsigned char *sk)

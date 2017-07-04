@@ -440,6 +440,22 @@ void shake128_squeezeblocks(unsigned char *output, unsigned long long nblocks, u
   keccak_squeezeblocks(output, nblocks, s, SHAKE128_RATE);
 }
 
+void shake128_squeezebytes(unsigned char *output, unsigned long long outputByteLen, uint64_t *s)
+{
+  unsigned char d[SHAKE128_RATE];
+  unsigned long long i;
+
+  keccak_squeezeblocks(output, outputByteLen/SHAKE128_RATE, s, SHAKE128_RATE);
+  output += (outputByteLen/SHAKE128_RATE)*SHAKE128_RATE;
+
+  if (outputByteLen % SHAKE128_RATE) {
+    keccak_squeezeblocks(d, 1, s, SHAKE128_RATE);
+    for(i = 0; i < outputByteLen % SHAKE128_RATE; i++) {
+      output[i] = d[i];
+    }
+  }
+}
+
 void shake128(unsigned char *output, unsigned long long outputByteLen, const unsigned char *input, unsigned long long inputByteLen)
 {
   unsigned long long i;

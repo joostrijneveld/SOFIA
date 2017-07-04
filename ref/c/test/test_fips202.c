@@ -88,6 +88,24 @@ int main()
         printf("succeeded!\n");
     }
 
+    printf("Testing absorb / squeeze using squeezebytes.. ");
+
+    for (i = 0; i < 25; i++) {
+        s[i] = 0;
+    }
+    shake128_absorb(s, inbuf, 1024);
+    shake128_squeezebytes(outbuf1, 1024, s);
+
+    for (i = 0; i < 1024; i++) {
+        if (outbuf0[i] != outbuf1[i]) {
+            printf("failed!\n");
+            break;
+        }
+    }
+    if (i == 1024) {
+        printf("succeeded!\n");
+    }
+
     printf("Testing absorb / squeeze with single partial absorb.. ");
 
     for (i = 0; i < 25; i++) {
