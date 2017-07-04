@@ -72,10 +72,15 @@ SOFIA_STATIC void permute4x(unsigned char *out0, unsigned char *out1, unsigned c
                (unsigned char *)in3, len*8);
 }
 
-SOFIA_STATIC void sample_rte(uint64_t *out, const unsigned char *seed, int seedlen)
+SOFIA_STATIC void sample_rte(uint64_t *out, uint64_t *shakestate)
 {
-    shake128((unsigned char *)out, SOFIA_SEEDBYTES, seed, seedlen);
-    prg((unsigned char *)out, (2*SOFIA_NBYTES + SOFIA_MBYTES) * SOFIA_ROUNDS, (unsigned char *)out);
+#if SOFIA_SEEDBYTES > SHAKE128_RATE
+    #error "We assume that one block of SHAKE128 output is larger than the PRG seed"
+#endif
+    unsigned char d[SHAKE128_RATE];
+
+    shake128_squeezeblocks(d, 1, shakestate);
+    prg((unsigned char *)out, (2*SOFIA_NBYTES + SOFIA_MBYTES) * SOFIA_ROUNDS, d);
 }
 
 int crypto_sign_keypair(unsigned char *pk, unsigned char *sk)
@@ -130,7 +135,8 @@ int crypto_sign(unsigned char *sm, unsigned long long *smlen,
     unsigned char indices[(SOFIA_ROUNDS * (2 + 1) + 7) & ~7];
     // Number of bits offset that is left when all 2-bit challenges are done.
     #define SOFIA_INDICES_OFFSET (SOFIA_ROUNDS & 0x03)
-    unsigned char sample_seed[SOFIA_SEEDBYTES + SOFIA_HASHBYTES];
+    uint64_t sample_shakestate[25];
+    unsigned long long absorbed_bytes;
     uint64_t *s = (uint64_t *)(skbuf + SOFIA_SEEDBYTES);
     uint64_t rte0[(2*SOFIA_N64 + SOFIA_M64) * SOFIA_ROUNDS] __attribute__ ((aligned (32)));
     uint64_t *r0 = rte0;
@@ -162,16 +168,19 @@ int crypto_sign(unsigned char *sm, unsigned long long *smlen,
     // Compute v = F(s)
     MQ((uint64_t *)(pk + SOFIA_SEEDBYTES), s, F);
 
-    for (i = 0; i < SOFIA_SEEDBYTES; i++) {
-        sample_seed[i] = skbuf[SOFIA_SEEDBYTES + SOFIA_NBYTES + i];
+    // Absorb S_rte and the message into a shake128 state
+    // S_rte also serves to protect against internal collisions
+    for(i = 0; i < 25; i++) {
+        sample_shakestate[i] = 0;
     }
-    for (i = 0; i < SOFIA_HASHBYTES; i++) {
-        sample_seed[i + SOFIA_SEEDBYTES] = D[i];
-    }
+    absorbed_bytes = 0;
+    shake128_partial_absorb(sample_shakestate, skbuf + SOFIA_SEEDBYTES + SOFIA_NBYTES, SOFIA_SEEDBYTES, &absorbed_bytes);
+    shake128_partial_absorb(sample_shakestate, m, mlen, &absorbed_bytes);
+    shake128_close_absorb(sample_shakestate, &absorbed_bytes);
 
     // Sample all the random values for r, t and e.
     // Interpret these as bitsliced elements in GF4, in 128-bit chunks.
-    sample_rte(rte0, sample_seed, SOFIA_SEEDBYTES + SOFIA_HASHBYTES);
+    sample_rte(rte0, sample_shakestate);
 
     for (i = 0; i < SOFIA_ROUNDS; i++) {
         for (j = 0; j < SOFIA_N64; j++) {
