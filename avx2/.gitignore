@@ -1,0 +1,6 @@
+test/*
+!test/*.c
+!test/*.h
+*.s
+crypto_stream_aes256ctr.o
+__pycache__/
