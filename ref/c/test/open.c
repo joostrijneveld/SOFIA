@@ -1,6 +1,5 @@
 #include "../api.h"
 #include "../sofia.h"
-#include "../fips202.h"
 #include <stdio.h>
 #include <stdint.h>
 
