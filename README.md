@@ -1,6 +1,8 @@
 ## SOFIA: MQ-based signatures in the QROM
 
-This code package contains the source code that accompanies the paper "SOFIA: MQ-based signatures in the QROM". It contains a C reference implementation and an optimized avx2 implementation, in the respective directories. The code is self-contained and does not require any external dependencies.
+This code package contains the source code that accompanies the paper "SOFIA: MQ-based signatures in the QROM". It contains a C reference implementation and an optimized avx2 implementation, in the respective directories. The code is self-contained and does not require any external dependencies. When referring to this implementation, please refer to the original paper:
+
+> Ming-Shing Chen, Andreas Hülsing, Joost Rijneveld, Simona Samardjiska, and Peter Schwabe. SOFIA: MQ-based signatures in the QROM. https://joostrijneveld.nl/papers/sofia
 
 In order to verify correctness of the code, several tests are supplied. These can be called by calling `make test` in one of the code directories. Simply calling `make` builds the tests, but does not run them yet. This also runs test/speed, which provides benchmarks for the API functions (i.e. crypto_sign, crypto_sign_open and crypto_keypair), as well as numerous internal functions.
 
