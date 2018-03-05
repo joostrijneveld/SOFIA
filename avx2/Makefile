@@ -1,6 +1,6 @@
 CC = /usr/bin/cc
 GCC = /usr/bin/gcc
-CFLAGS = -O3 -Wall -Wextra -Wpedantic -march=native -std=c99 -DSOFIA_GAP_F
+CFLAGS = -O3 -Wall -Wextra -Wpedantic -march=native -std=c99 -DSOFIA_GAP_F -no-pie
 
 SOURCES =      F.c randombytes.c sofia.c sampling.c fips202.c fips202x4.c prg.c
 HEADERS = mq.h F.h randombytes.h sofia.h sampling.h fips202.h fips202x4.h crypto_stream_aes256ctr.h prg.h params.h api.h
